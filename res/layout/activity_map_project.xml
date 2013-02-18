@@ -1,0 +1,47 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+<!-- 
+    <LinearLayout android:id="@+id/lin1"
+    	android:layout_width="fill_parent"
+    	android:layout_height="wrap_content" 
+    	android:orientation="horizontal"
+    	android:layout_below="@+id/edWaypoint"
+    >
+    <Button 
+        android:id="@+id/btnSearch"
+ 		android:layout_width="fill_parent"
+ 		android:layout_height="40dp"
+ 		android:text="@string/btnSearch"
+ 		android:layout_weight="1"
+        />
+    <Button 
+        android:id="@+id/btnClear"
+ 		android:layout_width="fill_parent"
+ 		android:layout_height="40dp"
+ 		android:layout_weight="1"
+ 		android:text="Clear"
+        />
+    </LinearLayout>
+ -->   
+    
+    
+    <com.project.merauke.DrikvyMap
+ 		android:id="@+id/mv_screen"
+ 		android:layout_width="fill_parent"
+ 		android:layout_height="fill_parent"
+ 		android:enabled="true"
+ 		android:clickable="true"
+ 		android:apiKey="0KoVnRwUZbOGPaHwRNW1JfGoKp3965shDILVs0A"
+ 	/>
+
+	<Button 
+        android:id="@+id/btnFilterOne"
+ 		android:layout_width="wrap_content"
+ 		android:layout_height="wrap_content"
+ 		android:layout_alignParentLeft="true"
+ 		android:padding="20dip"
+ 		android:text="-1-"
+        />
+</RelativeLayout>
