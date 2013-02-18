@@ -43,22 +43,22 @@ public class DrikvyMap extends MapView {
 		// String coordinates for Jl.Dipatiukur near ITHB initial to zoom
 		static String strOrigin[] = {"-6.888435", "107.615631"};
 		static String HTTP_URL = "http://www.jejaringhotel.com/android/showme.php";
-		MyItemizedOverlay currItemizedOverlay = null;
+		CustomItemizedOverlay<CustomOverlayItem> currItemizedOverlay = null;
 		
 		public DrikvyMap(android.content.Context context, android.util.AttributeSet attrs) {
 			super(context, attrs);
 			// this is it!!!
 			Log.d("drikvy-map", "1");
 			cx = context;
-			
+			/*
 			Drawable drawable = this.getResources().getDrawable(
 					R.drawable.company_32);
 						
-			currItemizedOverlay = new MyItemizedOverlay(drawable, cx);
+			currItemizedOverlay = new CustomItemizedOverlay<CustomOverlayItem>(drawable, this);
 			this.getOverlays().add(currItemizedOverlay);
 			
 			Thread loadThread = new Thread(runLoadPosition);
-			loadThread.start();
+			loadThread.start();*/
 		}
 		
 		public DrikvyMap(android.content.Context context, android.util.AttributeSet attrs, int defStyle) {
@@ -72,7 +72,7 @@ public class DrikvyMap extends MapView {
 			//Log.d("drikvy-map", "3");
 			cx = context;
 		}
-		
+		/*
 		@Override
 		public boolean onTouchEvent(MotionEvent ev) {
 			if (ev.getAction()==MotionEvent.ACTION_UP) {
@@ -98,7 +98,7 @@ public class DrikvyMap extends MapView {
 			return super.onTouchEvent(ev);
 		}
 		
-		
+		/*
 		Runnable runLoadPosition = new Runnable() {
 			
 			@Override
@@ -120,9 +120,6 @@ public class DrikvyMap extends MapView {
 			}
 		};
 		
-		/**
-		 * get inputstream data from http request
-		 * */
 		private InputStream getConnection(String url) {
 			InputStream is = null;
 		
@@ -198,11 +195,13 @@ public class DrikvyMap extends MapView {
 				
 				posPoint = new GeoPoint(msg.getData().getInt("LAT")
 						, msg.getData().getInt("LNG"));
-				currItemizedOverlay.addOverlay(new OverlayItem(posPoint, "default", null));
+				currItemizedOverlay.addOverlay(new CustomOverlayItem(posPoint
+						, "default", "default balloon"
+						, "http://ia.media-imdb.com/images/M/MV5BMTM1MTk2ODQxNV5BMl5BanBnXkFtZTcwOTY5MDg0NA@@._V1._SX40_CR0,0,40,54_.jpg"));
 				DrikvyMap.this.invalidate();
 			};
 		};
-		
+		*/
 		int oldZoomLevel=-1;
 		@Override
 		public void dispatchDraw(Canvas canvas) {

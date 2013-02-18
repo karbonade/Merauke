@@ -27,7 +27,7 @@
  -->   
     
     
-    <com.project.merauke.DrikvyMap
+    <com.google.android.maps.MapView
  		android:id="@+id/mv_screen"
  		android:layout_width="fill_parent"
  		android:layout_height="fill_parent"
