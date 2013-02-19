@@ -32,11 +32,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.widget.Toast;
@@ -54,6 +53,8 @@ public class CustomItemizedOverlay<Item extends OverlayItem> extends BalloonItem
 	private Context c;
 	private MapView maps;
 	
+	private ProgressDialog whellProgress;
+	
 	// String coordinates for Jl.Dipatiukur near ITHB initial to zoom
 	static String strOrigin[] = {"-6.888435", "107.615631"};
 	static String HTTP_URL = "http://www.jejaringhotel.com/android/showme.php";
@@ -69,10 +70,32 @@ public class CustomItemizedOverlay<Item extends OverlayItem> extends BalloonItem
 		maps = mapView;
 		c = mapView.getContext();
 		
-		Thread loadThread = new Thread(runLoadPosition);
-		loadThread.start();
+		whellProgress = new ProgressDialog(c);		
+		whellProgress.setIndeterminate(true);
+		whellProgress.setMessage("Please wait...");
+				
+		new FetchDataTask() { 
+			protected void onPreExecute() {
+	    		whellProgress.show();
+	        }
+			
+	        protected void onPostExecute(ArrayList<CustomOverlayItem> result) {
+	            if (result != null) {
+	            	storeAll(result);
+	            	whellProgress.dismiss();
+	            	
+	            	maps.invalidate();
+	            }
+	        }
+	    }.execute();
+		// TODO
 	}
 
+	public void storeAll(ArrayList<CustomOverlayItem> listOverlays) {
+		m_overlays = listOverlays;
+		populate();
+	}
+	
 	public void addOverlay(CustomOverlayItem overlay) {
 	    m_overlays.add(overlay);
 	    populate();
@@ -106,10 +129,17 @@ public class CustomItemizedOverlay<Item extends OverlayItem> extends BalloonItem
 	}
 
 	
+	boolean isMove = false;
 	
 	@Override
 	public boolean onTouchEvent(MotionEvent event, MapView map) {
+		
 		if(event.getAction() == MotionEvent.ACTION_MOVE) {
+			isMove = true;
+		}
+		
+		if((event.getAction() == MotionEvent.ACTION_UP) && isMove) {
+			Log.d("ACTION", "UP after MOVE");
 			// Toast.makeText(c, "geser-geser detected", Toast.LENGTH_SHORT).show();
 			Projection projection = maps.getProjection();
 			GeoPoint geoPointMin = (GeoPoint) projection.fromPixels(0, 0);
@@ -117,39 +147,34 @@ public class CustomItemizedOverlay<Item extends OverlayItem> extends BalloonItem
 			
 		    minLat = geoPointMin.getLatitudeE6() / 1E6;
 		    minLng = geoPointMin.getLongitudeE6() / 1E6;
-		    Log.d("drikvy-min", minLat+"---"+minLng);// 2-3
+		    // Log.d("drikvy-min", minLat+"---"+minLng);// 2-3
 		    
 		    maxLat = geoPointMax.getLatitudeE6() / 1E6;
 		    maxLng = geoPointMax.getLongitudeE6() / 1E6;
-		    Log.d("drikvy-max", maxLat+"---"+maxLng);// 1-4
+		    // Log.d("drikvy-max", maxLat+"---"+maxLng);// 1-4
 		    
-			Thread loadThread = new Thread(runLoadPosition);
-			loadThread.start();
+		    new FetchDataTask() { 
+		    	
+		    	protected void onPreExecute() {
+		    		whellProgress.show();
+		        }
+		    	
+		        protected void onPostExecute(ArrayList<CustomOverlayItem> result) {
+		            if (result != null) {
+		            	storeAll(result);
+		            	whellProgress.dismiss();
+		            	
+		            	maps.invalidate();
+		            }
+		        }
+		    }.execute();
+		    
+		    isMove = false;
 		}
 		return false;
 	}
 	
-	Runnable runLoadPosition = new Runnable() {
 		
-		@Override
-		public void run() {
-			StringBuilder builder = new StringBuilder();
-			BufferedReader reader = new BufferedReader(new InputStreamReader
-					(getConnection(HTTP_URL+"?maxLat="+maxLat+"&minLat="
-			+minLat+"&minLng="+minLng+"&maxLng="+maxLng)));
-	        String line;
-	        try {
-				while ((line = reader.readLine()) != null) {
-				  builder.append(line);
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-	        String strJSON = builder.toString();
-	        processingJSON(strJSON);
-		}
-	};
-	
 	/**
 	 * get inputstream data from http request
 	 * */
@@ -177,7 +202,11 @@ public class CustomItemizedOverlay<Item extends OverlayItem> extends BalloonItem
 	    return is;		
 	}
 	
-	private void processingJSON(String strJSON) {
+	/**
+	 * extract JSON into usable data
+	 * */
+	private ArrayList<CustomOverlayItem> processingJSON(String strJSON) {
+		ArrayList<CustomOverlayItem> listPoints = new ArrayList<CustomOverlayItem>();
 		try {
 			JSONArray rowArray = new JSONArray(strJSON);
 			// Log.d("JSON", "total: "+rowArray.length());
@@ -186,53 +215,58 @@ public class CustomItemizedOverlay<Item extends OverlayItem> extends BalloonItem
 			JSONObject jsonElement = null;
 			int posLat = 0;
 			int posLng = 0;
+			String name = "";
+			String alamat = "";
 			
 			if(rowArray.length() != 0) {
 				this.removeAll();// TODO robust impl.
+				
+				while(count < rowArray.length()) {
+					
+					jsonElement = rowArray.getJSONObject(count);
+					posLat = (int) (Double.parseDouble
+							(jsonElement.getString("lat")) * 1E6);
+					posLng = (int) (Double.parseDouble
+							(jsonElement.getString("lng")) * 1E6);
+					name = jsonElement.getString("namalokasi");
+					alamat = jsonElement.getString("alamat");
+					
+					listPoints.add(new CustomOverlayItem(new GeoPoint(posLat, posLng)
+					, name, alamat
+					, "http://ia.media-imdb.com/images/M/MV5BMTM1MTk2ODQxNV5BMl5BanBnXkFtZTcwOTY5MDg0NA@@._V1._SX40_CR0,0,40,54_.jpg"));
+					
+					count++;
+				}
+				Log.d("JSON", "loading data finish");
+			} else {
+				Log.d("JSON", "EMPTY");
 			}
-			
-			while(count < rowArray.length()) {
-				Thread.sleep(500);
-				
-				jsonElement = rowArray.getJSONObject(count);
-				posLat = (int) (Double.parseDouble
-						(jsonElement.getString("lat")) * 1E6);
-				posLng = (int) (Double.parseDouble
-						(jsonElement.getString("lng")) * 1E6);
-				// (Double.parseDouble(jsonElement.getString("namalokasi")) * 1E6)
-				// (Double.parseDouble(jsonElement.getString("alamat")) * 1E6)
-				
-				Message posMsg = new Message();
-				Bundle bundle = new Bundle();
-				bundle.putInt("LAT", posLat);
-				bundle.putInt("LNG", posLng);
-				posMsg.setData(bundle);
-				
-				mHandler.sendMessage(posMsg);
-				Log.d("JSON", "message sent, pos: "+count);
-				
-				count++;
-			}
-			Log.d("JSON", "loading data finish");
 		} catch (JSONException e) {
 			e.printStackTrace();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
 		}
+		
+		return listPoints;
 	}
 	
-	Handler mHandler = new Handler() {
-		GeoPoint posPoint = null;
-		
-		public void handleMessage(android.os.Message msg) {
-			
-			posPoint = new GeoPoint(msg.getData().getInt("LAT")
-					, msg.getData().getInt("LNG"));
-			addOverlay(new CustomOverlayItem(posPoint
-					, "default", "default balloon"
-					, "http://ia.media-imdb.com/images/M/MV5BMTM1MTk2ODQxNV5BMl5BanBnXkFtZTcwOTY5MDg0NA@@._V1._SX40_CR0,0,40,54_.jpg"));
-			maps.invalidate();
-		};
-	};
+	private class FetchDataTask extends AsyncTask<String, Integer, ArrayList<CustomOverlayItem>> {
+	    @Override
+	    protected ArrayList<CustomOverlayItem> doInBackground(String... arg0) {
+	    	StringBuilder builder = new StringBuilder();
+			BufferedReader reader = new BufferedReader(new InputStreamReader
+					(getConnection(HTTP_URL+"?maxLat="+maxLat+"&minLat="
+			+minLat+"&minLng="+minLng+"&maxLng="+maxLng)));
+	        String line;
+	        try {
+				while ((line = reader.readLine()) != null) {
+				  builder.append(line);
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+	        String strJSON = builder.toString();
+	        
+	        return processingJSON(strJSON);
+	    }	
+	}
 	
 }
